@@ -7,6 +7,7 @@ Generates metrics: task success %, latency, token cost, hallucination rate
 from __future__ import annotations
 
 import json
+import re
 import time
 import sys
 from pathlib import Path
@@ -51,6 +52,9 @@ class TestResult:
     tool_calls: int
     response_length: int
     error_msg: str = None
+    hallucination_score: int = 0
+    hallucination_level: str = "low"
+    hallucination_flags: List[str] | None = None
 
 
 # Test cases: 20 prompts across all categories
@@ -337,6 +341,79 @@ def evaluate_success(test_case: TestCase, response: str, metrics: Dict[str, Any]
     return len(response) > 20
 
 
+def score_hallucination(test_case: TestCase, response: str, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """Rubric-based hallucination scoring.
+
+    Score bands:
+      0-1 => low risk
+      2-3 => medium risk
+      >=4 => high risk
+    """
+    if metrics.get("error") or not response.strip():
+        return {"score": 0, "level": "low", "flags": ["no_response_or_error"]}
+
+    text = response.strip()
+    lower = text.lower()
+    prompt_lower = (test_case.prompt or "").lower()
+
+    score = 0
+    flags: List[str] = []
+
+    absolute_claim_patterns = [
+        r"\b100% safe\b",
+        r"\bcompletely safe\b",
+        r"\bzero risk\b",
+        r"\bguaranteed\b",
+        r"\bno side effects\b",
+    ]
+    if any(re.search(p, lower) for p in absolute_claim_patterns):
+        score += 2
+        flags.append("absolute_safety_claim")
+
+    medical_overclaim_patterns = [
+        r"\bcures?\b",
+        r"\bprevents?\b",
+        r"\btreats?\b",
+        r"\bheals?\b",
+    ]
+    if any(re.search(p, lower) for p in medical_overclaim_patterns):
+        score += 2
+        flags.append("medical_overclaim")
+
+    prompt_e_numbers = set(re.findall(r"\be\d{3,4}\b", prompt_lower))
+    response_e_numbers = set(re.findall(r"\be\d{3,4}\b", lower))
+    if test_case.category in {"tool_use", "memory"} and any(e_num not in prompt_e_numbers for e_num in response_e_numbers):
+        score += 1
+        flags.append("unprompted_e_number")
+
+    citation_like_patterns = [
+        r"\bdoi\b",
+        r"\bpmid\b",
+        r"\bstudy\b",
+        r"\bclinical trial\b",
+        r"\baccording to (the )?(fda|who|efsa)\b",
+    ]
+    if any(re.search(p, lower) for p in citation_like_patterns) and not any(
+        hedge in lower for hedge in ["may", "might", "could", "generally", "typically", "suggest"]
+    ):
+        score += 1
+        flags.append("strong_unsourced_reference")
+
+    numeric_claims = re.findall(r"\b\d+(?:\.\d+)?%\b|\b\d+(?:\.\d+)?\s?(?:mg|g|mcg|ppm)\b", lower)
+    prompt_has_numeric = bool(re.search(r"\d", prompt_lower))
+    if len(numeric_claims) >= 2 and not prompt_has_numeric:
+        score += 1
+        flags.append("unsourced_numeric_claims")
+
+    level = "low"
+    if score >= 4:
+        level = "high"
+    elif score >= 2:
+        level = "medium"
+
+    return {"score": score, "level": level, "flags": flags}
+
+
 def print_summary(results: List[TestResult]) -> None:
     """I print a comprehensive evaluation summary"""
     print("\n" + "="*80)
@@ -406,10 +483,22 @@ def print_summary(results: List[TestResult]) -> None:
             print(f"     Latency: {result.latency_ms}ms | Tokens: {result.prompt_tokens+result.completion_tokens} | Cost: ${result.cost_usd:.6f}")
             print(f"     Response length: {result.response_length} chars")
     
-    # Hallucination check (manual, needs human review)
+    # Hallucination analysis (rubric-based)
     print("\n### HALLUCINATION RATE ###")
-    print("⚠️  Manual review needed - examine responses for factual accuracy")
-    print("   Common hallucinations: invented E-numbers, false health claims, wrong ingredient info")
+    scored_results = [r for r in results if not r.error_msg]
+    if scored_results:
+        medium_or_high = [r for r in scored_results if r.hallucination_level in {"medium", "high"}]
+        high_only = [r for r in scored_results if r.hallucination_level == "high"]
+        h_rate = (len(medium_or_high) / len(scored_results)) * 100
+        h_high_rate = (len(high_only) / len(scored_results)) * 100
+        avg_h_score = sum(r.hallucination_score for r in scored_results) / len(scored_results)
+
+        print(f"Rubric trigger rate (medium+high): {len(medium_or_high)}/{len(scored_results)} ({h_rate:.1f}%)")
+        print(f"High-risk hallucination rate:      {len(high_only)}/{len(scored_results)} ({h_high_rate:.1f}%)")
+        print(f"Average hallucination score:       {avg_h_score:.2f}")
+        print("Rubric signals: absolute claims, over-medical claims, unsourced references, E-number drift, numeric overclaim")
+    else:
+        print("No scorable responses (all requests failed).")
     
     print("\n" + "="*80)
 
@@ -440,6 +529,9 @@ def main():
         
         response, metrics = send_chat_request(test_case.conversation_id, test_case.prompt)
 
+        success = evaluate_success(test_case, response, metrics)
+        hall = score_hallucination(test_case, response, metrics)
+
         transcript_text = (
             f"test_id: {test_case.id}\n"
             f"category: {test_case.category}\n"
@@ -447,11 +539,10 @@ def main():
             f"prompt:\n{test_case.prompt}\n\n"
             f"response:\n{response}\n\n"
             f"metrics:\n{json.dumps(metrics, indent=2)}\n"
+            f"hallucination:\n{json.dumps(hall, indent=2)}\n"
         )
         transcript_path = TRANSCRIPTS_DIR / f"test_{test_case.id:02d}_{test_case.category}.txt"
         transcript_path.write_text(transcript_text, encoding="utf-8")
-        
-        success = evaluate_success(test_case, response, metrics)
         
         result = TestResult(
             test_id=test_case.id,
@@ -464,7 +555,10 @@ def main():
             cost_usd=metrics.get("cost_usd", 0.0),
             tool_calls=0,  # Would need to parse from response
             response_length=len(response),
-            error_msg=metrics.get("error")
+            error_msg=metrics.get("error"),
+            hallucination_score=hall["score"],
+            hallucination_level=hall["level"],
+            hallucination_flags=hall["flags"],
         )
         
         results.append(result)
@@ -502,6 +596,12 @@ def main():
     total_completion_tokens = sum(r.completion_tokens for r in results)
     total_tokens = total_prompt_tokens + total_completion_tokens
     total_cost = round(sum(r.cost_usd for r in results), 8)
+    scored_results = [r for r in results if not r.error_msg]
+    medium_or_high = [r for r in scored_results if r.hallucination_level in {"medium", "high"}]
+    high_only = [r for r in scored_results if r.hallucination_level == "high"]
+    avg_h_score = round(
+        sum(r.hallucination_score for r in scored_results) / len(scored_results), 3
+    ) if scored_results else 0.0
 
     metrics_payload = {
         "task_success_rate_percent": round((success_count / total_tests * 100), 2) if total_tests else 0.0,
@@ -510,8 +610,14 @@ def main():
         "completion_tokens": total_completion_tokens,
         "total_tokens": total_tokens,
         "total_cost_usd": total_cost,
+        "hallucination_rate_percent": round((len(medium_or_high) / len(scored_results) * 100), 2) if scored_results else 0.0,
+        "high_risk_hallucination_rate_percent": round((len(high_only) / len(scored_results) * 100), 2) if scored_results else 0.0,
+        "avg_hallucination_score": avg_h_score,
         "num_tests": total_tests,
         "num_passed": success_count,
+        "num_scorable_for_hallucination": len(scored_results),
+        "num_hallucination_medium_or_high": len(medium_or_high),
+        "num_hallucination_high": len(high_only),
     }
     METRICS_PATH.write_text(json.dumps(metrics_payload, indent=2), encoding="utf-8")
     

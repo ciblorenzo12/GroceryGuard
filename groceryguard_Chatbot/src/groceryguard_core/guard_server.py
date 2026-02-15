@@ -247,10 +247,20 @@ def chat(inp: ChatIn, request: Request):
             yield from stream_text(final_text)
             yield f"\n\n[latency_ms={latency_ms}]"
 
-        except (AuthenticationError, BadRequestError, OpenAIError) as e:
+        except (AuthenticationError, BadRequestError) as e:
             latency_ms = int((time.time() - start) * 1000)
             write_event("openai_error", inp.conversation_id, ip, inp.user_message, refused=True, tool_count=0, latency_ms=latency_ms, prompt_tokens=0, completion_tokens=0, cost_usd=0.0, note=str(e)[:200])
             yield "OpenAI API error. Check var/guard_events.jsonl for details."
+            yield f"\n\n[latency_ms={latency_ms}]"
+
+        except OpenAIError as e:
+            final_text = redact_secrets(offline_answer(safe_user_msg))
+            append_msg(inp.conversation_id, "user", safe_user_msg)
+            append_msg(inp.conversation_id, "assistant", final_text)
+
+            latency_ms = int((time.time() - start) * 1000)
+            write_event("openai_error_fallback", inp.conversation_id, ip, inp.user_message, refused=False, tool_count=0, latency_ms=latency_ms, prompt_tokens=0, completion_tokens=0, cost_usd=0.0, note=str(e)[:200])
+            yield from stream_text(final_text)
             yield f"\n\n[latency_ms={latency_ms}]"
 
     return StreamingResponse(_stream(), media_type="text/plain")
@@ -348,6 +358,30 @@ def chat_structured(inp: ChatIn, request: Request):
         append_msg(inp.conversation_id, "assistant", redact_secrets(validated.answer))
 
         return JSONResponse(content=validated.model_dump())
+
+    except (AuthenticationError, BadRequestError) as e:
+        write_event("structured_openai_error", inp.conversation_id, ip, inp.user_message, refused=True, note=str(e)[:180])
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "structured_output_failed",
+                "message": "OpenAI API error. Could not generate structured output for this request.",
+            },
+        )
+
+    except OpenAIError as e:
+        answer = redact_secrets(offline_answer(safe_user_msg))
+        payload = {
+            "answer": answer,
+            "risk_level": "unknown",
+            "flagged_ingredients": [],
+            "recommended_action": "Review ingredient list manually and consult a professional for medical concerns.",
+        }
+
+        append_msg(inp.conversation_id, "user", safe_user_msg)
+        append_msg(inp.conversation_id, "assistant", answer)
+        write_event("structured_openai_fallback", inp.conversation_id, ip, inp.user_message, refused=False, note=str(e)[:180])
+        return JSONResponse(content=payload)
 
     except Exception as e:
         write_event("structured_error", inp.conversation_id, ip, inp.user_message, refused=True, note=str(e)[:180])

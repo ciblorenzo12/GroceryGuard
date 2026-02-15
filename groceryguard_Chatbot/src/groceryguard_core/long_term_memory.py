@@ -1,9 +1,13 @@
 """Long-term memory system that used ChromaDB for persistent fact storage across sessions."""
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import List, Dict, Any
+
+# Disable Chroma telemetry to avoid noisy runtime telemetry client errors.
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
 
 try:
     import chromadb
@@ -26,7 +30,14 @@ def _get_collection():
         return None
     
     if _collection is None:
-        _client = chromadb.PersistentClient(path=str(_DB_PATH))
+        try:
+            from chromadb.config import Settings
+            _client = chromadb.PersistentClient(
+                path=str(_DB_PATH),
+                settings=Settings(anonymized_telemetry=False),
+            )
+        except Exception:
+            _client = chromadb.PersistentClient(path=str(_DB_PATH))
         # I had created or gotten a collection for storing facts learned from conversations
         _collection = _client.get_or_create_collection(
             name="groceryguard_facts",
