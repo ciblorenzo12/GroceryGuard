@@ -94,7 +94,8 @@ function Set-DotEnvApiKey {
         [string]$ApiKey
     )
 
-    $entry = "OPENAI_API_KEY=$ApiKey"
+    $escapedKey = $ApiKey -replace '"', '""'
+    $entry = "OPENAI_API_KEY=\"$escapedKey\""
 
     if (Test-Path $EnvPath) {
         $lines = [System.Collections.Generic.List[string]]::new()
