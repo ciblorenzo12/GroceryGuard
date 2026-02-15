@@ -8,8 +8,6 @@ from typing import List, Dict, Any
 
 # Disable Chroma telemetry to avoid noisy runtime telemetry client errors.
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
-os.environ.setdefault("CHROMA_PRODUCT_TELEMETRY_IMPL", "chromadb.telemetry.product.noop.Noop")
-os.environ.setdefault("CHROMA_TELEMETRY_IMPL", "chromadb.telemetry.product.noop.Noop")
 
 try:
     import chromadb
@@ -33,18 +31,24 @@ def _get_collection():
     
     if _collection is None:
         try:
-            from chromadb.config import Settings
-            _client = chromadb.PersistentClient(
-                path=str(_DB_PATH),
-                settings=Settings(anonymized_telemetry=False),
+            try:
+                from chromadb.config import Settings
+                _client = chromadb.PersistentClient(
+                    path=str(_DB_PATH),
+                    settings=Settings(anonymized_telemetry=False),
+                )
+            except Exception:
+                _client = chromadb.PersistentClient(path=str(_DB_PATH))
+
+            # I had created or gotten a collection for storing facts learned from conversations
+            _collection = _client.get_or_create_collection(
+                name="groceryguard_facts",
+                metadata={"hnsw:space": "cosine"}
             )
         except Exception:
-            _client = chromadb.PersistentClient(path=str(_DB_PATH))
-        # I had created or gotten a collection for storing facts learned from conversations
-        _collection = _client.get_or_create_collection(
-            name="groceryguard_facts",
-            metadata={"hnsw:space": "cosine"}
-        )
+            _client = None
+            _collection = None
+            return None
     return _collection
 
 
