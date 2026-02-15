@@ -6,6 +6,28 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Test-PortInUse {
+    param([int]$CandidatePort)
+    $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $CandidatePort -State Listen -ErrorAction SilentlyContinue
+    return $null -ne $listener
+}
+
+function Get-FirstFreePort {
+    param(
+        [int]$StartPort,
+        [int]$MaxAttempts = 25
+    )
+
+    for ($i = 0; $i -lt $MaxAttempts; $i++) {
+        $candidate = $StartPort + $i
+        if (-not (Test-PortInUse -CandidatePort $candidate)) {
+            return $candidate
+        }
+    }
+
+    throw "No free localhost port found in range $StartPort-$($StartPort + $MaxAttempts - 1)."
+}
+
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $projectRoot
 
@@ -26,5 +48,12 @@ if ($Offline) {
     Remove-Item Env:GROCERYGUARD_OFFLINE -ErrorAction SilentlyContinue
 }
 
-Write-Host "[2/2] Starting server on http://127.0.0.1:$Port ..." -ForegroundColor Green
-& $pythonExe -m uvicorn src.groceryguard_core.guard_server:app --host 127.0.0.1 --port $Port
+$selectedPort = $Port
+if (Test-PortInUse -CandidatePort $selectedPort) {
+    $fallbackPort = Get-FirstFreePort -StartPort ($selectedPort + 1)
+    Write-Host "Port $selectedPort is already in use. Falling back to port $fallbackPort." -ForegroundColor Yellow
+    $selectedPort = $fallbackPort
+}
+
+Write-Host "[2/2] Starting server on http://127.0.0.1:$selectedPort ..." -ForegroundColor Green
+& $pythonExe -m uvicorn src.groceryguard_core.guard_server:app --host 127.0.0.1 --port $selectedPort
