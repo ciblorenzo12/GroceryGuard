@@ -6,6 +6,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Show-BuildErrorAndPause {
+    param([string]$Message)
+    Write-Host "" -ForegroundColor Red
+    Write-Host "Build failed: $Message" -ForegroundColor Red
+    Read-Host "Press Enter to close"
+}
+
 function Test-PortInUse {
     param([int]$CandidatePort)
     $listener = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $CandidatePort -State Listen -ErrorAction SilentlyContinue
@@ -39,6 +46,10 @@ if (-not (Test-Path $pythonExe)) {
 if (-not $SkipBuild) {
     Write-Host "[1/2] Building project..." -ForegroundColor Cyan
     & $pythonExe "build.py"
+    if ($LASTEXITCODE -ne 0) {
+        Show-BuildErrorAndPause -Message "build.py exited with code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
 }
 
 if ($Offline) {
