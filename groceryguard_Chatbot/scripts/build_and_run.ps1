@@ -151,7 +151,12 @@ function Ensure-OpenAIApiKey {
     }
 
     Write-Host "OPENAI_API_KEY was not found in environment or .env." -ForegroundColor Yellow
-    $enteredKey = Read-SecretInput -Prompt "Enter OPENAI_API_KEY (leave blank for offline mode)"
+    $shouldPaste = Read-Host "Do you want to paste an OpenAI API key now? (y/N)"
+    if ($shouldPaste -notmatch '^(y|yes)$') {
+        return $false
+    }
+
+    $enteredKey = Read-SecretInput -Prompt "Paste OPENAI_API_KEY"
 
     if ([string]::IsNullOrWhiteSpace($enteredKey)) {
         return $false
