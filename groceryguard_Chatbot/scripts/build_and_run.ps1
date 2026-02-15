@@ -1,7 +1,8 @@
 param(
     [switch]$SkipBuild,
     [switch]$Offline,
-    [int]$Port = 8001
+    [int]$Port = 8001,
+    [string]$PythonExe
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,12 +36,46 @@ function Get-FirstFreePort {
     throw "No free localhost port found in range $StartPort-$($StartPort + $MaxAttempts - 1)."
 }
 
+function Resolve-PythonExecutable {
+    param([string]$Root)
+
+    $candidates = @()
+
+    if ($env:VIRTUAL_ENV) {
+        $candidates += (Join-Path $env:VIRTUAL_ENV "Scripts\python.exe")
+    }
+
+    $candidates += (Join-Path $Root ".venv\Scripts\python.exe")
+
+    $parent = Split-Path -Parent $Root
+    if ($parent) {
+        $candidates += (Join-Path $parent ".venv\Scripts\python.exe")
+    }
+
+    foreach ($candidate in $candidates | Select-Object -Unique) {
+        if (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+
+    $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($pythonCmd -and $pythonCmd.Source) {
+        return $pythonCmd.Source
+    }
+
+    throw "Python executable not found. Tried: $($candidates -join ', '), and 'python' on PATH."
+}
+
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $projectRoot
 
-$pythonExe = Join-Path $projectRoot ".venv\Scripts\python.exe"
-if (-not (Test-Path $pythonExe)) {
-    throw "Python venv not found at $pythonExe. Create it first or adjust path."
+if ($PythonExe) {
+    if (-not (Test-Path $PythonExe)) {
+        throw "Provided Python executable does not exist: $PythonExe"
+    }
+    $pythonExe = $PythonExe
+} else {
+    $pythonExe = Resolve-PythonExecutable -Root $projectRoot
 }
 
 if (-not $SkipBuild) {
