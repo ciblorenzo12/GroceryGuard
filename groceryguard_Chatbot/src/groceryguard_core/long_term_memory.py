@@ -8,6 +8,8 @@ from typing import List, Dict, Any
 
 # Disable Chroma telemetry to avoid noisy runtime telemetry client errors.
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+os.environ.setdefault("CHROMA_PRODUCT_TELEMETRY_IMPL", "chromadb.telemetry.product.noop.Noop")
+os.environ.setdefault("CHROMA_TELEMETRY_IMPL", "chromadb.telemetry.product.noop.Noop")
 
 try:
     import chromadb
