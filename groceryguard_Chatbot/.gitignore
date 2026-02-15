@@ -1,5 +1,6 @@
 # Python
 .venv/
+.venv311/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -22,7 +23,6 @@ var/ablation_results.json
 build/
 dist/
 *.egg-info/
-results/
 
 # Editors / OS
 .vscode/

@@ -1,0 +1,28 @@
+test_id: 20
+category: edge_case
+conversation_id: test_conv_20
+prompt:
+?!@#$%^&*()
+
+response:
+Offline Mode:
+I can’t reach the live GPT API right now. If you paste an ingredient label in this format:
+ingredients: item1, item2, item3
+…I can still scan it locally and flag watchlist items.
+
+[latency_ms=165]
+
+metrics:
+{
+  "latency_ms": 2237,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "cost_usd": 0.0,
+  "facts_learned": 0
+}
+hallucination:
+{
+  "score": 0,
+  "level": "low",
+  "flags": []
+}

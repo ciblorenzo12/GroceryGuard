@@ -1,0 +1,33 @@
+test_id: 4
+category: tool_use
+conversation_id: test_conv_4
+prompt:
+ingredients: high fructose corn syrup, yellow 5, sodium benzoate. Are any of these dangerous?
+
+response:
+I couldn’t reach the live GPT API, so I had run in Offline Mode using local tools.
+
+Parsed ingredients (quick split):
+ - high fructose corn syrup
+ - yellow 5
+ - sodium benzoate. are any of these dangerous?
+
+No watchlist matches had been found in this label.
+Note: this was not medical advice—just a local watchlist check.
+
+[latency_ms=170]
+
+metrics:
+{
+  "latency_ms": 2247,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "cost_usd": 0.0,
+  "facts_learned": 0
+}
+hallucination:
+{
+  "score": 0,
+  "level": "low",
+  "flags": []
+}

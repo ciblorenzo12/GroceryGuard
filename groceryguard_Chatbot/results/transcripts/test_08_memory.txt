@@ -1,0 +1,33 @@
+test_id: 8
+category: memory
+conversation_id: test_conv_memory_1
+prompt:
+ingredients: raisins, white wine, honey - is this safe for me?
+
+response:
+I couldn’t reach the live GPT API, so I had run in Offline Mode using local tools.
+
+Parsed ingredients (quick split):
+ - raisins
+ - white wine
+ - honey - is this safe for me?
+
+No watchlist matches had been found in this label.
+Note: this was not medical advice—just a local watchlist check.
+
+[latency_ms=164]
+
+metrics:
+{
+  "latency_ms": 2233,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "cost_usd": 0.0,
+  "facts_learned": 0
+}
+hallucination:
+{
+  "score": 0,
+  "level": "low",
+  "flags": []
+}

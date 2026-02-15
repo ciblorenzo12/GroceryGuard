@@ -1,0 +1,39 @@
+test_id: 1
+category: tool_use
+conversation_id: test_conv_1
+prompt:
+Scan this ingredient list: ingredients: water, sodium chloride, citric acid, red 40
+
+response:
+I couldn’t reach the live GPT API, so I had run in Offline Mode using local tools.
+
+Parsed ingredients (quick split):
+ - water
+ - sodium chloride
+ - citric acid
+ - red 40
+
+Watchlist flags (heads-up):
+- red 40 (coloring)
+  Why: Artificial dye some people avoid
+  From watchlist: Artificial dye some people avoid
+
+If you had wanted, you could have told me your goal (avoid dyes, low sodium, allergy, etc.) and I would have helped filter it.
+Reminder: I was not a doctor—if you had a condition/allergy, confirm with a professional.
+
+[latency_ms=199]
+
+metrics:
+{
+  "latency_ms": 2238,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "cost_usd": 0.0,
+  "facts_learned": 0
+}
+hallucination:
+{
+  "score": 0,
+  "level": "low",
+  "flags": []
+}

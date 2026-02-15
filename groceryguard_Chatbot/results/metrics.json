@@ -1,0 +1,16 @@
+{
+  "task_success_rate_percent": 85.0,
+  "avg_latency_ms": 2193,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "total_tokens": 0,
+  "total_cost_usd": 0.0,
+  "hallucination_rate_percent": 0.0,
+  "high_risk_hallucination_rate_percent": 0.0,
+  "avg_hallucination_score": 0.0,
+  "num_tests": 20,
+  "num_passed": 17,
+  "num_scorable_for_hallucination": 20,
+  "num_hallucination_medium_or_high": 0,
+  "num_hallucination_high": 0
+}

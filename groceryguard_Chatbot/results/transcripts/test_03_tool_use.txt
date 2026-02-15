@@ -1,0 +1,29 @@
+test_id: 3
+category: tool_use
+conversation_id: test_conv_3
+prompt:
+What is the difference between natural and artificial additives?
+
+response:
+Offline Mode (local KB):
+What is GroceryGuard?
+GroceryGuard is a ta[REDACTED] chatbot that helps scan ingredient labels and explain ingredients in plain language.
+
+If you had wanted, you could have pasted an ingredient label and I would have scanned it too.
+
+[latency_ms=136]
+
+metrics:
+{
+  "latency_ms": 2193,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "cost_usd": 0.0,
+  "facts_learned": 0
+}
+hallucination:
+{
+  "score": 0,
+  "level": "low",
+  "flags": []
+}
