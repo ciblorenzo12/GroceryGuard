@@ -1,0 +1,32 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Libs
+.env
+.env.*
+
+# Runtime logs/state
+var/conversations/
+var/turn_logs.jsonl
+var/guard_events.jsonl
+var/ablation_results.json
+
+# Build and generated outputs
+build/
+dist/
+*.egg-info/
+results/
+
+# Editors / OS
+.vscode/
+.vs/
+.idea/
+.DS_Store
+Thumbs.db

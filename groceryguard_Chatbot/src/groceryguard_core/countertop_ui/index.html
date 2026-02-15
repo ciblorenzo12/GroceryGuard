@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GroceryGuard Countertop</title>
+  <style>
+    body { font-family: system-ui, Segoe UI, Arial, sans-serif; margin: 0; background:#0f172a; color:#e2e8f0; }
+    header { padding: 14px 18px; border-bottom: 1px solid #334155; display:flex; gap:12px; align-items:center; }
+    header small { color:#94a3b8; }
+    main { max-width: 980px; margin: 0 auto; padding: 18px; display:grid; grid-template-columns: 1fr; gap: 14px;}
+    .card { background:#111c33; border:1px solid #24324d; border-radius: 14px; padding: 14px; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+    input, textarea { width:100%; background:#0b1224; border:1px solid #2b3a58; color:#e2e8f0; border-radius: 10px; padding:10px; }
+    textarea { min-height: 90px; resize: vertical; }
+    button { background:#22c55e; color:#052e16; border:none; border-radius: 10px; padding:10px 14px; font-weight: 700; cursor:pointer; }
+    button:disabled { opacity: .6; cursor:not-allowed; }
+    .meta { display:flex; gap:10px; align-items:center; }
+    .pill { background:#0b1224; border:1px solid #2b3a58; border-radius: 999px; padding: 6px 10px; color:#94a3b8; font-size: 12px;}
+    #log { white-space: pre-wrap; line-height: 1.35; }
+    .msg { padding:10px; border-radius:12px; margin: 10px 0; border:1px solid #2b3a58; background:#0b1224;}
+    .who { font-weight:700; font-size: 12px; color:#a5b4fc; margin-bottom: 6px; }
+    .who.user { color:#93c5fd; }
+    .who.bot { color:#86efac; }
+    .typing { display: inline-flex; gap: 4px; }
+    .typing span { width: 8px; height: 8px; border-radius: 50%; background:#86efac; animation: bounce 1.4s infinite; }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-8px); } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div style="font-weight:800;">GroceryGuard Countertop</div>
+      <small>Streaming chat • function tools • memory</small>
+    </div>
+    <div class="meta" style="margin-left:auto;">
+      <span class="pill" id="cidPill"></span>
+      <button id="newCidBtn" type="button">New conversation</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="row">
+        <textarea id="msg" placeholder="Type a request… e.g. Scan this label: ingredients: chicken, water, sodium nitrite, spices, red 40"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="sendBtn" type="button">Send</button>
+        <span class="pill" id="statusPill">idle</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800; margin-bottom:8px;">Transcript</div>
+      <div id="log"></div>
+    </div>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

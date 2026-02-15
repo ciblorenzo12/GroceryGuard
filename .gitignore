@@ -1,0 +1,36 @@
+# Repo-level local environment
+.venv/
+.pytest_cache/
+var/
+
+# Python caches/artifacts
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+
+# Environment files
+**/.env
+**/.env.*
+
+# IDE / OS noise
+**/.vscode/
+**/.vs/
+**/.idea/
+**/.DS_Store
+**/Thumbs.db
+
+# Project-generated outputs
+groceryguard_Chatbot/build/
+groceryguard_Chatbot/dist/
+groceryguard_Chatbot/*.egg-info/
+groceryguard_Chatbot/results/
+groceryguard_Chatbot/var/conversations/
+groceryguard_Chatbot/var/turn_logs.jsonl
+groceryguard_Chatbot/var/guard_events.jsonl
+groceryguard_Chatbot/var/ablation_results.json
