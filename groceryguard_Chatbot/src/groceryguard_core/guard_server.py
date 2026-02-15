@@ -360,14 +360,18 @@ def chat_structured(inp: ChatIn, request: Request):
         return JSONResponse(content=validated.model_dump())
 
     except (AuthenticationError, BadRequestError) as e:
-        write_event("structured_openai_error", inp.conversation_id, ip, inp.user_message, refused=True, note=str(e)[:180])
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "structured_output_failed",
-                "message": "OpenAI API error. Could not generate structured output for this request.",
-            },
-        )
+        answer = redact_secrets(offline_answer(safe_user_msg))
+        payload = {
+            "answer": answer,
+            "risk_level": "unknown",
+            "flagged_ingredients": [],
+            "recommended_action": "Review ingredient list manually and consult a professional for medical concerns.",
+        }
+
+        append_msg(inp.conversation_id, "user", safe_user_msg)
+        append_msg(inp.conversation_id, "assistant", answer)
+        write_event("structured_openai_error_fallback", inp.conversation_id, ip, inp.user_message, refused=False, note=str(e)[:180])
+        return JSONResponse(content=payload)
 
     except OpenAIError as e:
         answer = redact_secrets(offline_answer(safe_user_msg))
